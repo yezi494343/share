@@ -46,5 +46,4 @@ name: 自动更新订阅链接
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add docs/subscription.json
-            git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 自动更新订阅链接 $(date '+%Y-%m-%d
-  %H:%M:%S')" && git push)
+            git diff --quiet && git diff --staged --quiet || (git commit -m "更新订阅链接" && git push)
