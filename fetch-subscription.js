@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 async function fetchSubscriptionLink() {
   console.log('🚀 开始获取订阅链接...');
 
@@ -15,211 +16,87 @@ async function fetchSubscriptionLink() {
 
   try {
     const page = await browser.newPage();
-
-    // 设置超时时间
     page.setDefaultTimeout(30000);
 
+    // 访问登录页面
     console.log('📱 访问登录页面...');
-  await page.goto('https://gw-2.smjc2.com/#/login', {
-    waitUntil: 'networkidle2'
-  });
+    await page.goto('https://gw-2.smjc2.com/#/login', {
+      waitUntil: 'networkidle2'
+    });
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-  console.log('⏳ 等待页面加载完成...');
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-  // 点击入口按钮
-  console.log('🔘 查找并点击入口按钮...');
-  try {
-    // 尝试查找并点击蓝色按钮
+    // 点击入口按钮
+    console.log('🔘 点击入口按钮...');
     const button = await page.$('button, a.btn, .btn-primary, a[href*="gw-2.smjc2.com"]');
     if (button) {
-      console.log('✅ 找到按钮，点击进入...');
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => console.log('导航完成')),
+        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => {}),
         button.click()
       ]);
-    } else {
-      console.log('ℹ️ 未找到入口按钮，可能已经在正确页面');
     }
-  } catch (error) {
-    console.log('⚠️ 点击按钮时出错，继续执行:', error.message);
-  }
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-  console.log('⏳ 再等待页面加载...');
-  await new Promise(resolve => setTimeout(resolve, 3000));
-    // 保存调试截图和HTML
-    console.log('📸 保存登录页面截图...');
-    await page.screenshot({ path: 'login-page.png', fullPage: true });
-
-    const html = await page.content();
-    fs.writeFileSync('login-page.html', html);
-    console.log('💾 已保存登录页面截图和HTML到 login-page.png 和 login-page.html');
-
-    console.log('🔍 查找登录输入框...');
-    // 尝试查找所有可能的输入框
-    const inputs = await page.evaluate(() => {
-      const allInputs = Array.from(document.querySelectorAll('input'));
-      return allInputs.map(input => ({
-        type: input.type,
-        name: input.name,
-        id: input.id,
-        className: input.className,
-        placeholder: input.placeholder
-      }));
-    });
-    console.log('📋 页面上的所有输入框:', JSON.stringify(inputs, null, 2));
-
-    // 等待登录表单加载（增加超时时间）
+    // 等待并填写登录表单
     await page.waitForSelector('input', { timeout: 15000 });
-
-    console.log('✍️ 尝试填写登录信息...');
-
-    // 查找所有输入框
     const allInputs = await page.$$('input');
-    console.log(`找到 ${allInputs.length} 个输入框`);
 
-    if (allInputs.length >= 2) {
-      // 假设第一个是邮箱，第二个是密码
-      console.log('填写第一个输入框（邮箱）...');
-      await allInputs[0].type(process.env.VPN_EMAIL, { delay: 100 });
-
-      console.log('填写第二个输入框（密码）...');
-      await allInputs[1].type(process.env.VPN_PASSWORD, { delay: 100 });
-
-      // 查找并点击登录按钮
-      console.log('🔍 查找登录按钮...');
-      const buttons = await page.evaluate(() => {
-        const allButtons = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn'));
-        return allButtons.map(btn => ({
-          text: btn.textContent || btn.value,
-          type: btn.type,
-          className: btn.className
-        }));
-      });
-      console.log('📋 页面上的所有按钮:', JSON.stringify(buttons, null, 2));
-
-      // 点击登录按钮
-  console.log('🔐 点击登录按钮...');
-  const clicked = await page.evaluate(() => {
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const loginBtn = buttons.find(btn => {
-      const text = (btn.textContent || '').trim().toLowerCase();
-      return text === '登录' || text === 'sign in' || text.includes('登录') || text.includes('sign');
-    });
-    if (loginBtn) {
-      loginBtn.click();
-      return true;
+    if (allInputs.length < 2) {
+      throw new Error(`输入框数量不对，只找到 ${allInputs.length} 个`);
     }
-    return false;
-  });
 
-  console.log(clicked ? '✅ 已点击登录按钮' : '❌ 未找到登录按钮');
+    console.log('✍️ 填写登录信息...');
+    await allInputs[0].type(process.env.VPN_EMAIL, { delay: 100 });
+    await allInputs[1].type(process.env.VPN_PASSWORD, { delay: 100 });
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 等待登录完成（等待URL变化或足够长时间）
-    console.log('⏳ 等待登录响应...');
+    // 点击登录按钮
+    console.log('🔐 登录中...');
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      const loginBtn = buttons.find(btn => {
+        const text = (btn.textContent || '').trim().toLowerCase();
+        return text === '登录' || text === 'sign in' || text.includes('sign');
+      });
+      if (loginBtn) loginBtn.click();
+    });
+
+    // 等待登录完成
+    console.log('⏳ 等待登录完成...');
     try {
       await page.waitForFunction(
         () => !window.location.href.includes('/login'),
         { timeout: 15000 }
       );
-      console.log('✅ URL已变化，登录成功！');
     } catch (e) {
-      console.log('⚠️ URL未变化，继续等待...');
       await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
-    // 检查当前URL
     const currentUrl = page.url();
-    console.log('当前页面URL:', currentUrl);
-
-    // 如果还在登录页，说明登录失败
     if (currentUrl.includes('/login')) {
-      await page.screenshot({ path: 'login-still-on-page.png', fullPage: true });
-      console.log('❌ 仍在登录页面，可能登录失败');
-
-      // 检查是否有错误提示
-      const errorMsg = await page.evaluate(() => {
-        const errors = document.querySelectorAll('.alert, .error, [class*="error"], [class*="alert"]');
-        if (errors.length > 0) {
-          return Array.from(errors).map(e => e.textContent.trim()).filter(t => t).join('; ');
-        }
-        return null;
-      });
-
-      if (errorMsg) {
-        console.log('错误提示:', errorMsg);
-      }
-
       throw new Error('登录失败，URL未离开登录页');
     }
-      } else {
-        throw new Error(`输入框数量不对，只找到 ${allInputs.length} 个`);
-      }
 
-      console.log('✅ 确认登录成功，跳转到个人中心...');
-    // 跳转到 profile 页面
+    // 跳转到个人中心
+    console.log('✅ 登录成功，进入用户中心...');
     await page.goto('https://gw-2.smjc2.com/#/profile', {
       waitUntil: 'networkidle2'
     });
-
-    // 等待页面加载
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-  // 向下滚动页面，让订阅链接区域加载出来
-  console.log('📜 向下滚动页面...');
-
-  // 分多次滚动，让内容逐步加载
-  for (let i = 0; i < 5; i++) {
-    await page.evaluate((step) => {
-      window.scrollBy(0, 500); // 每次滚动500px
-    }, i);
-    await new Promise(resolve => setTimeout(resolve, 800)); // 每次滚动后等待
-    console.log(`滚动第 ${i + 1} 次...`);
-  }
-
-  // 最后滚动到底部
-  await page.evaluate(() => {
-    window.scrollTo(0, document.body.scrollHeight);
-  });
-
-  console.log('✅ 已滚动到页面底部');
-  await new Promise(resolve => setTimeout(resolve, 3000));
-
-  // 再次截图查看滚动后的页面
-  await page.screenshot({ path: 'profile-viewport.png', fullPage: false });
-  await page.screenshot({ path: 'profile-full.png', fullPage: true });
-  console.log('📸 已保存截图（视口和全页）');
-
-  console.log('🔍 查找订阅链接...');
-
-    let subscriptionLink = null;
-
-  try {
-    // 多等一会，确保订阅区域加载完成
-    console.log('⏳ 等待订阅区域加载...');
     await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // 查找"复制订阅链接"按钮
-    console.log('🔎 查找复制按钮...');
+    // 滚动页面
+    console.log('📜 滚动到订阅区域...');
+    for (let i = 0; i < 5; i++) {
+      await page.evaluate(() => window.scrollBy(0, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-  const copyButton = await page.evaluate(() => {
-    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
-    const btn = buttons.find(el => {
-      const text = (el.textContent || el.innerText || '').trim();
-      return text === 'Copy Subscription Link' || el.className.includes('action-btn');
-    });
-    return btn ? true : false;
-  });
-
-  if (copyButton) {
-    console.log('✅ 找到复制按钮，授予剪贴板权限...');
-
-    // 授予剪贴板权限
+    // 点击复制按钮并获取链接
+    console.log('📋 获取订阅链接...');
     const context = browser.defaultBrowserContext();
     await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
 
-    // 点击按钮
-    console.log('👆 点击复制按钮...');
     await page.evaluate(() => {
       const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
       const btn = buttons.find(el => {
@@ -229,35 +106,17 @@ async function fetchSubscriptionLink() {
       if (btn) btn.click();
     });
 
-    // 等待复制完成
     await new Promise(resolve => setTimeout(resolve, 2000));
+    const subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
 
-    // 从剪贴板读取
-    console.log('📋 从剪贴板读取...');
-    subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
-
-    if (subscriptionLink) {
-      console.log('✅ 成功从剪贴板获取到链接！');
-    } else {
-      console.log('⚠️ 剪贴板是空的');
-    }
-  } else {
-    console.log('❌ 未找到复制按钮');
-  }
-  } catch (error) {
-    console.error('❌ 获取链接时出错:', error.message);
-  }
-    if (!subscriptionLink) {
-      // 保存页面截图用于调试
-      await page.screenshot({ path: 'debug-screenshot.png', fullPage: true });
-      console.log('📸 已保存页面截图到 debug-screenshot.png，请检查页面结构');
-      throw new Error('未能找到订阅链接，请检查页面结构');
+    if (!subscriptionLink || !subscriptionLink.startsWith('http')) {
+      throw new Error('未能获取到有效的订阅链接');
     }
 
     console.log('✅ 成功获取订阅链接！');
     console.log('🔗 链接预览:', subscriptionLink.substring(0, 50) + '...');
 
-    // 保存订阅链接到JSON文件
+    // 保存到JSON文件
     const data = {
       link: subscriptionLink,
       updateTime: new Date().toISOString(),
@@ -285,7 +144,6 @@ async function fetchSubscriptionLink() {
   }
 }
 
-// 运行
 fetchSubscriptionLink().catch(error => {
   console.error('脚本执行失败:', error);
   process.exit(1);
