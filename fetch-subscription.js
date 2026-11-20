@@ -21,24 +21,69 @@ async function fetchSubscriptionLink() {
       waitUntil: 'networkidle2'
     });
 
-    // 等待登录表单加载
-    await page.waitForSelector('input[type="text"], input[type="email"]', { timeout: 10000 });
+    console.log('⏳ 等待页面加载完成...');
+    await page.waitForTimeout(5000);
 
-    console.log('✍️ 填写登录信息...');
-    // 填写邮箱（根据实际页面结构可能需要调整选择器）
-    const emailInput = await page.$('input[type="text"], input[type="email"]');
-    await emailInput.type(process.env.VPN_EMAIL);
+    // 保存调试截图和HTML
+    console.log('📸 保存登录页面截图...');
+    await page.screenshot({ path: 'login-page.png', fullPage: true });
 
-    // 填写密码
-    const passwordInput = await page.$('input[type="password"]');
-    await passwordInput.type(process.env.VPN_PASSWORD);
+    const html = await page.content();
+    fs.writeFileSync('login-page.html', html);
+    console.log('💾 已保存登录页面截图和HTML到 login-page.png 和 login-page.html');
 
-    // 点击登录按钮
-    console.log('🔐 登录中...');
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 }),
-      page.click('button[type="submit"], .login-button, .btn-login')
-    ]);
+    console.log('🔍 查找登录输入框...');
+    // 尝试查找所有可能的输入框
+    const inputs = await page.evaluate(() => {
+      const allInputs = Array.from(document.querySelectorAll('input'));
+      return allInputs.map(input => ({
+        type: input.type,
+        name: input.name,
+        id: input.id,
+        className: input.className,
+        placeholder: input.placeholder
+      }));
+    });
+    console.log('📋 页面上的所有输入框:', JSON.stringify(inputs, null, 2));
+
+    // 等待登录表单加载（增加超时时间）
+    await page.waitForSelector('input', { timeout: 15000 });
+
+    console.log('✍️ 尝试填写登录信息...');
+
+    // 查找所有输入框
+    const allInputs = await page.$$('input');
+    console.log(`找到 ${allInputs.length} 个输入框`);
+
+    if (allInputs.length >= 2) {
+      // 假设第一个是邮箱，第二个是密码
+      console.log('填写第一个输入框（邮箱）...');
+      await allInputs[0].type(process.env.VPN_EMAIL, { delay: 100 });
+
+      console.log('填写第二个输入框（密码）...');
+      await allInputs[1].type(process.env.VPN_PASSWORD, { delay: 100 });
+
+      // 查找并点击登录按钮
+      console.log('🔍 查找登录按钮...');
+      const buttons = await page.evaluate(() => {
+        const allButtons = Array.from(document.querySelectorAll('button, input[type="submit"], a.btn'));
+        return allButtons.map(btn => ({
+          text: btn.textContent || btn.value,
+          type: btn.type,
+          className: btn.className
+        }));
+      });
+      console.log('📋 页面上的所有按钮:', JSON.stringify(buttons, null, 2));
+
+      // 点击登录按钮
+      console.log('🔐 登录中...');
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 }).catch(() => console.log('导航超时，继续...')),
+        page.click('button').catch(() => page.keyboard.press('Enter'))
+      ]);
+    } else {
+      throw new Error(`输入框数量不对，只找到 ${allInputs.length} 个`);
+    }
 
     console.log('✅ 登录成功，跳转到个人中心...');
     // 跳转到 profile 页面
