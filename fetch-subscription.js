@@ -133,31 +133,41 @@ async function fetchSubscriptionLink() {
     let subscriptionLink = null;
 
   try {
-    // 直接查找包含http链接的readonly输入框
-    console.log('🔎 查找订阅链接输入框...');
-    const linkElement = await page.$('input[readonly][value*="http"], input[readonly]');
+    // 查找"复制订阅地址"或"复制"按钮
+    console.log('🔎 查找复制按钮...');
 
-    if (linkElement) {
-      subscriptionLink = await page.evaluate(el => el.value, linkElement);
-      console.log('✅ 从输入框获取到链接');
-    }
+    const copyButton = await page.evaluateHandle(() => {
+      const buttons = Array.from(document.querySelectorAll('button, a, .btn'));
+      return buttons.find(btn => {
+        const text = btn.textContent || btn.innerText || '';
+        return text.includes('复制订阅') || text.includes('复制地址') || (text.includes('复制') &&
+  text.includes('订阅'));
+      });
+    });
 
-    // 如果没找到，尝试查找所有readonly输入框
-    if (!subscriptionLink) {
-      const allReadonlyInputs = await page.$$('input[readonly]');
-      for (const input of allReadonlyInputs) {
-        const value = await page.evaluate(el => el.value, input);
-        if (value && value.startsWith('http')) {
-          subscriptionLink = value;
-          console.log('✅ 从readonly输入框找到链接');
-          break;
-        }
-      }
+    if (copyButton && await copyButton.asElement()) {
+      console.log('✅ 找到复制按钮，点击复制...');
+
+      // 授予剪贴板权限
+      const context = browser.defaultBrowserContext();
+      await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
+
+      // 点击按钮
+      const button = await copyButton.asElement();
+      await button.click();
+
+      // 等待复制完成
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 从剪贴板读取
+      subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
+      console.log('✅ 从剪贴板获取到链接');
+    } else {
+      console.log('❌ 未找到复制按钮');
     }
   } catch (error) {
     console.error('❌ 获取链接时出错:', error.message);
   }
-
     if (!subscriptionLink) {
       // 保存页面截图用于调试
       await page.screenshot({ path: 'debug-screenshot.png', fullPage: true });
