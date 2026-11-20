@@ -1,46 +1,46 @@
 name: 自动更新订阅链接
 
 on:
-    schedule:
-      - cron: '0 * * * *'
-    workflow_dispatch:
-    push:
-      branches:
-        - main
+  schedule:
+    - cron: '* * * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-    update-link:
-      runs-on: ubuntu-latest
+  update-link:
+    runs-on: ubuntu-latest
 
-      steps:
-        - name: 检出仓库
-          uses: actions/checkout@v4
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
 
-        - name: 设置 Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: '22'
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-        - name: 缓存依赖
-          uses: actions/cache@v3
-          with:
-            path: |
-              node_modules
-              ~/.cache/puppeteer
-            key: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
+      - name: 缓存依赖
+        uses: actions/cache@v3
+        with:
+          path: |
+            node_modules
+            ~/.cache/puppeteer
+          key: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
 
-        - name: 安装依赖
-          run: npm install puppeteer@24.15.0
+      - name: 安装依赖
+        run: npm install puppeteer@24.15.0
 
-        - name: 获取订阅链接
-          env:
-            VPN_EMAIL: ${{ secrets.VPN_EMAIL }}
-            VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
-          run: node fetch-subscription.js
+      - name: 获取订阅链接
+        env:
+          VPN_EMAIL: ${{ secrets.VPN_EMAIL }}
+          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+        run: node fetch-subscription.js
 
-        - name: 提交更新
-          run: |
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git add docs/subscription.json
-            git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 更新订阅链接" && git push)
+      - name: 提交更新
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/subscription.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 更新订阅链接" && git push)
