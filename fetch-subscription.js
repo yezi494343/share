@@ -100,29 +100,63 @@ async function fetchSubscriptionLink() {
 
       // 点击登录按钮
   console.log('🔐 点击登录按钮...');
-  await page.evaluate(() => {
+  const clicked = await page.evaluate(() => {
     const buttons = Array.from(document.querySelectorAll('button'));
     const loginBtn = buttons.find(btn => {
-      const text = (btn.textContent || '').trim();
-      return text === '登录';
+      const text = (btn.textContent || '').trim().toLowerCase();
+      return text === '登录' || text === 'sign in' || text.includes('登录') || text.includes('sign');
     });
     if (loginBtn) {
       loginBtn.click();
+      return true;
     }
+    return false;
   });
 
-  // 等待导航或页面变化
-  console.log('⏳ 等待登录完成...');
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log(clicked ? '✅ 已点击登录按钮' : '❌ 未找到登录按钮');
 
-  // 检查是否登录成功（看URL是否变化）
-  const currentUrl = page.url();
-  console.log('当前页面URL:', currentUrl);
-    } else {
-      throw new Error(`输入框数量不对，只找到 ${allInputs.length} 个`);
+    // 等待登录完成（等待URL变化或足够长时间）
+    console.log('⏳ 等待登录响应...');
+    try {
+      await page.waitForFunction(
+        () => !window.location.href.includes('/login'),
+        { timeout: 15000 }
+      );
+      console.log('✅ URL已变化，登录成功！');
+    } catch (e) {
+      console.log('⚠️ URL未变化，继续等待...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
 
-    console.log('✅ 登录成功，跳转到个人中心...');
+    // 检查当前URL
+    const currentUrl = page.url();
+    console.log('当前页面URL:', currentUrl);
+
+    // 如果还在登录页，说明登录失败
+    if (currentUrl.includes('/login')) {
+      await page.screenshot({ path: 'login-still-on-page.png', fullPage: true });
+      console.log('❌ 仍在登录页面，可能登录失败');
+
+      // 检查是否有错误提示
+      const errorMsg = await page.evaluate(() => {
+        const errors = document.querySelectorAll('.alert, .error, [class*="error"], [class*="alert"]');
+        if (errors.length > 0) {
+          return Array.from(errors).map(e => e.textContent.trim()).filter(t => t).join('; ');
+        }
+        return null;
+      });
+
+      if (errorMsg) {
+        console.log('错误提示:', errorMsg);
+      }
+
+      throw new Error('登录失败，URL未离开登录页');
+    }
+      } else {
+        throw new Error(`输入框数量不对，只找到 ${allInputs.length} 个`);
+      }
+
+      console.log('✅ 确认登录成功，跳转到个人中心...');
     // 跳转到 profile 页面
     await page.goto('https://gw-2.smjc2.com/#/profile', {
       waitUntil: 'networkidle2'
