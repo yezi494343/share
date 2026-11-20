@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: url('background.jpg') center/cover fixed;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -22,13 +22,14 @@
         }
 
         .container {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
             padding: 40px;
             max-width: 600px;
             width: 100%;
             text-align: center;
+            backdrop-filter: blur(10px);
         }
 
         h1 {
@@ -49,14 +50,15 @@
         }
 
         .auto-update {
-            background: #e3f2fd;
-            color: #1976d2;
+            background: #f5f5f5;
+            color: #333;
             padding: 10px 20px;
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
             display: inline-block;
             margin-bottom: 20px;
+            border: 2px solid #ddd;
         }
 
         .link-box {
@@ -94,14 +96,29 @@
         }
 
         .btn-copy {
-            background: #667eea;
+            background: #333;
             color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-copy:before {
+            content: '★';
+            position: absolute;
+            left: 15px;
+            font-size: 20px;
+            animation: starTwinkle 2s infinite;
         }
 
         .btn-copy:hover {
-            background: #5568d3;
+            background: #555;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        @keyframes starTwinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
         }
 
         .update-time {
@@ -142,8 +159,8 @@
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid #ddd;
+            border-top: 3px solid #333;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -205,7 +222,9 @@
             </div>
 
             <div class="update-time">
-                最后更新: <span id="updateTime">-</span>
+                下次更新: <span id="nextUpdateTime">-</span>
+                <br>
+                <span id="countdown" style="color: #666; font-size: 12px;">-</span>
             </div>
 
             <div class="notice">
@@ -218,6 +237,8 @@
 
     <script>
         let subscriptionLink = '';
+        let nextUpdateTime = null;
+        let countdownInterval = null;
 
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -226,6 +247,25 @@
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
+        }
+
+        function updateCountdown() {
+            if (!nextUpdateTime) return;
+
+            const now = new Date();
+            const diff = nextUpdateTime - now;
+
+            if (diff <= 0) {
+                document.getElementById('countdown').textContent = '即将更新...';
+                return;
+            }
+
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            document.getElementById('countdown').textContent =
+                `剩余 ${hours > 0 ? hours + '小时 ' : ''}${minutes}分 ${seconds}秒`;
         }
 
         async function loadSubscription() {
@@ -243,7 +283,23 @@
                 subscriptionLink = data.link;
 
                 document.getElementById('linkBox').textContent = subscriptionLink;
-                document.getElementById('updateTime').textContent = data.updateTimeReadable || '未知';
+
+                // 计算下次更新时间（最后更新时间 + 1小时）
+                const lastUpdate = new Date(data.updateTime);
+                nextUpdateTime = new Date(lastUpdate.getTime() + 60 * 60 * 1000);
+                const nextUpdateStr = nextUpdateTime.toLocaleString('zh-CN', {
+                    timeZone: 'Asia/Shanghai',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.getElementById('nextUpdateTime').textContent = nextUpdateStr;
+
+                // 启动倒计时
+                if (countdownInterval) clearInterval(countdownInterval);
+                updateCountdown();
+                countdownInterval = setInterval(updateCountdown, 1000);
 
                 loading.style.display = 'none';
                 content.style.display = 'block';
