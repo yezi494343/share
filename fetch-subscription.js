@@ -133,35 +133,52 @@ async function fetchSubscriptionLink() {
     let subscriptionLink = null;
 
   try {
-    // 查找"复制订阅地址"或"复制"按钮
+    // 多等一会，确保订阅区域加载完成
+    console.log('⏳ 等待订阅区域加载...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // 查找"复制订阅链接"按钮
     console.log('🔎 查找复制按钮...');
 
-    const copyButton = await page.evaluateHandle(() => {
-      const buttons = Array.from(document.querySelectorAll('button, a, .btn'));
-      return buttons.find(btn => {
-        const text = btn.textContent || btn.innerText || '';
-        return text.includes('复制订阅') || text.includes('复制地址') || (text.includes('复制') &&
-  text.includes('订阅'));
+    const copyButton = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button, a, span, div'));
+      const btn = buttons.find(el => {
+        const text = (el.textContent || el.innerText || '').trim();
+        return text === '复制订阅链接' || text.includes('复制订阅');
       });
+      return btn ? true : false;
     });
 
-    if (copyButton && await copyButton.asElement()) {
-      console.log('✅ 找到复制按钮，点击复制...');
+    if (copyButton) {
+      console.log('✅ 找到复制按钮，授予剪贴板权限...');
 
       // 授予剪贴板权限
       const context = browser.defaultBrowserContext();
       await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
 
       // 点击按钮
-      const button = await copyButton.asElement();
-      await button.click();
+      console.log('👆 点击复制按钮...');
+      await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button, a, span, div'));
+        const btn = buttons.find(el => {
+          const text = (el.textContent || el.innerText || '').trim();
+          return text === '复制订阅链接' || text.includes('复制订阅');
+        });
+        if (btn) btn.click();
+      });
 
       // 等待复制完成
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // 从剪贴板读取
+      console.log('📋 从剪贴板读取...');
       subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
-      console.log('✅ 从剪贴板获取到链接');
+
+      if (subscriptionLink) {
+        console.log('✅ 从剪贴板获取到链接');
+      } else {
+        console.log('⚠️ 剪贴板是空的');
+      }
     } else {
       console.log('❌ 未找到复制按钮');
     }
