@@ -99,11 +99,25 @@ async function fetchSubscriptionLink() {
       console.log('📋 页面上的所有按钮:', JSON.stringify(buttons, null, 2));
 
       // 点击登录按钮
-      console.log('🔐 登录中...');
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 }).catch(() => console.log('导航超时，继续...')),
-        page.click('button').catch(() => page.keyboard.press('Enter'))
-      ]);
+  console.log('🔐 点击登录按钮...');
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const loginBtn = buttons.find(btn => {
+      const text = (btn.textContent || '').trim();
+      return text === '登录';
+    });
+    if (loginBtn) {
+      loginBtn.click();
+    }
+  });
+
+  // 等待导航或页面变化
+  console.log('⏳ 等待登录完成...');
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
+  // 检查是否登录成功（看URL是否变化）
+  const currentUrl = page.url();
+  console.log('当前页面URL:', currentUrl);
     } else {
       throw new Error(`输入框数量不对，只找到 ${allInputs.length} 个`);
     }
