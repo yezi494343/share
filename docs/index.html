@@ -128,14 +128,13 @@
         }
 
         .notice {
-      background: #f5f5f5;
-      color: #666;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 13px;
-      margin-top: 15px;
-      border: 2px solid #ddd;
-  }
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-top: 15px;
+        }
 
         .status {
             display: inline-block;
@@ -194,7 +193,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="emoji">( •̀ ω •́ )✧</div>
+        <div class="emoji">✧₍^˶- ˕ -˵^₎✧</div>
         <h1>VPN 订阅链接</h1>
         <p class="subtitle">随时获取最新订阅 ヾ(≧▽≦*)o</p>
 
@@ -229,7 +228,7 @@
             </div>
 
             <div class="notice">
-                💡 若链接失效，请 @贴主 并告知 (｡•́︿•̀｡)
+                💡 若链接失效，请 @贴主 并告知 ◍⁰ᯅ⁰◍ .ᐟ
             </div>
         </div>
     </div>
@@ -257,14 +256,10 @@
             const diff = nextUpdateTime - now;
 
             if (diff <= 0) {
-      document.getElementById('countdown').textContent = '正在刷新获取新链接...';
-      clearInterval(countdownInterval);
-      // 延迟3秒后刷新页面
-      setTimeout(() => {
-          window.location.reload();
-      }, 3000);
-      return;
-  }
+                document.getElementById('countdown').textContent = '即将更新...';
+                return;
+            }
+
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((diff % (1000 * 60)) / 1000);
@@ -289,9 +284,14 @@
 
                 document.getElementById('linkBox').textContent = subscriptionLink;
 
-                // 计算下次更新时间（最后更新时间 + 1小时）
-                const lastUpdate = new Date(data.updateTime);
-                nextUpdateTime = new Date(lastUpdate.getTime() + 60 * 60 * 1000);
+                // 计算下次更新时间（下一个整点）
+                const now = new Date();
+                nextUpdateTime = new Date(now);
+                nextUpdateTime.setHours(now.getHours() + 1);
+                nextUpdateTime.setMinutes(0);
+                nextUpdateTime.setSeconds(0);
+                nextUpdateTime.setMilliseconds(0);
+
                 const nextUpdateStr = nextUpdateTime.toLocaleString('zh-CN', {
                     timeZone: 'Asia/Shanghai',
                     month: '2-digit',
