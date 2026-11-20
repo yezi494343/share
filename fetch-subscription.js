@@ -25,7 +25,7 @@ async function fetchSubscriptionLink() {
     });
 
     console.log('⏳ 等待页面加载完成...');
-    await page.waitForTimeout(5000);
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     // 保存调试截图和HTML
     console.log('📸 保存登录页面截图...');
@@ -95,7 +95,7 @@ async function fetchSubscriptionLink() {
     });
 
     // 等待页面加载
-    await page.waitForTimeout(3000);
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     console.log('🔍 查找订阅链接...');
 
@@ -141,7 +141,7 @@ async function fetchSubscriptionLink() {
           await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
 
           await copyButton.click();
-          await page.waitForTimeout(1000);
+          await new Promise(resolve => setTimeout(resolve, 1000));
 
           // 从剪贴板读取
           subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
