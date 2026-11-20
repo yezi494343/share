@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>获取最新订阅链接</title>
+    <title>VPN 订阅链接 ٩(◕‿◕｡)۶</title>
     <style>
         * {
             margin: 0;
@@ -37,10 +37,26 @@
             font-size: 28px;
         }
 
+        .emoji {
+            font-size: 32px;
+            margin: 10px 0;
+        }
+
         .subtitle {
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
             font-size: 14px;
+        }
+
+        .auto-update {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
         }
 
         .link-box {
@@ -88,21 +104,19 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-open {
-            background: #48bb78;
-            color: white;
-        }
-
-        .btn-open:hover {
-            background: #38a169;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
-        }
-
         .update-time {
             color: #999;
             font-size: 13px;
             margin-top: 20px;
+        }
+
+        .notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-top: 15px;
         }
 
         .status {
@@ -162,8 +176,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚀 VPN 订阅链接</h1>
-        <p class="subtitle">点击下方按钮获取最新订阅链接</p>
+        <div class="emoji">( •̀ ω •́ )✧</div>
+        <h1>VPN 订阅链接</h1>
+        <p class="subtitle">随时获取最新订阅 ヾ(≧▽≦*)o</p>
+
+        <div class="auto-update">
+            ⏰ 每小时自动更新一次
+        </div>
 
         <div id="status" class="status success" style="display: none;">
             <span id="statusText">链接已加载</span>
@@ -183,13 +202,14 @@
                 <button class="btn-copy" onclick="copyLink()">
                     📋 复制链接
                 </button>
-                <button class="btn-open" onclick="openLink()">
-                    🔗 直接打开
-                </button>
             </div>
 
             <div class="update-time">
-                最后更新时间: <span id="updateTime">-</span>
+                最后更新: <span id="updateTime">-</span>
+            </div>
+
+            <div class="notice">
+                💡 若链接失效，请 @贴主 并告知 (｡•́︿•̀｡)
             </div>
         </div>
     </div>
@@ -199,7 +219,6 @@
     <script>
         let subscriptionLink = '';
 
-        // 显示提示消息
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -209,7 +228,6 @@
             }, 3000);
         }
 
-        // 加载订阅链接
         async function loadSubscription() {
             const loading = document.getElementById('loading');
             const content = document.getElementById('content');
@@ -243,7 +261,6 @@
             }
         }
 
-        // 复制链接到剪贴板
         function copyLink() {
             if (!subscriptionLink) {
                 showToast('链接尚未加载');
@@ -252,10 +269,9 @@
 
             navigator.clipboard.writeText(subscriptionLink)
                 .then(() => {
-                    showToast('✓ 已复制到剪贴板');
+                    showToast('✓ 已复制到剪贴板 ٩(๑❛ᴗ❛๑)۶');
                 })
                 .catch(() => {
-                    // 降级方案
                     const textarea = document.createElement('textarea');
                     textarea.value = subscriptionLink;
                     textarea.style.position = 'fixed';
@@ -264,20 +280,10 @@
                     textarea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
-                    showToast('✓ 已复制到剪贴板');
+                    showToast('✓ 已复制到剪贴板 ٩(๑❛ᴗ❛๑)۶');
                 });
         }
 
-        // 直接打开链接
-        function openLink() {
-            if (!subscriptionLink) {
-                showToast('链接尚未加载');
-                return;
-            }
-            window.location.href = subscriptionLink;
-        }
-
-        // 页面加载时自动获取链接
         window.addEventListener('load', loadSubscription);
     </script>
 </body>
