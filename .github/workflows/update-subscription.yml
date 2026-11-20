@@ -22,7 +22,7 @@ jobs:
             node-version: '18'
 
         - name: 安装依赖
-          run: npm install puppeteer
+          run: npm install puppeteer@latest
 
         - name: 获取订阅链接
           env:
