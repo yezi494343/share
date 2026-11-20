@@ -1,0 +1,48 @@
+name: 自动更新订阅链接
+
+on:
+  # 每小时自动运行一次
+  schedule:
+    - cron: '0 * * * *'  # 每小时的第0分钟运行
+
+  # 允许手动触发
+  workflow_dispatch:
+
+  # 每次推送到main分支时也运行（用于测试）
+  push:
+    branches:
+      - main
+
+jobs:
+  update-link:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: 检出仓库
+        uses: actions/checkout@v3
+
+      # 2. 设置 Node.js 环境
+      - name: 设置 Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # 3. 安装依赖
+      - name: 安装依赖
+        run: npm install puppeteer
+
+      # 4. 运行脚本获取订阅链接
+      - name: 获取订阅链接
+        env:
+          VPN_EMAIL: ${{ secrets.VPN_EMAIL }}
+          VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
+        run: node fetch-subscription.js
+
+      # 5. 提交更新到仓库
+      - name: 提交更新
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/subscription.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🔄 自动更新订阅链接 $(date '+%Y-%m-%d %H:%M:%S')" && git push)

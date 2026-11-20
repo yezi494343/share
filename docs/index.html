@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>获取最新订阅链接</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .link-box {
+            background: #f7f7f7;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #555;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-copy {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-open {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-open:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .update-time {
+            color: #999;
+            font-size: 13px;
+            margin-top: 20px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 VPN 订阅链接</h1>
+        <p class="subtitle">点击下方按钮获取最新订阅链接</p>
+
+        <div id="status" class="status success" style="display: none;">
+            <span id="statusText">链接已加载</span>
+        </div>
+
+        <div id="loading" style="display: none; margin: 20px 0;">
+            <div class="loading"></div>
+            <p style="margin-top: 10px; color: #666;">正在加载最新链接...</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="link-box" id="linkBox">
+                正在加载...
+            </div>
+
+            <div class="buttons">
+                <button class="btn-copy" onclick="copyLink()">
+                    📋 复制链接
+                </button>
+                <button class="btn-open" onclick="openLink()">
+                    🔗 直接打开
+                </button>
+            </div>
+
+            <div class="update-time">
+                最后更新时间: <span id="updateTime">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let subscriptionLink = '';
+
+        // 显示提示消息
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 加载订阅链接
+        async function loadSubscription() {
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+            const status = document.getElementById('status');
+
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('subscription.json?t=' + Date.now());
+                if (!response.ok) throw new Error('获取链接失败');
+
+                const data = await response.json();
+                subscriptionLink = data.link;
+
+                document.getElementById('linkBox').textContent = subscriptionLink;
+                document.getElementById('updateTime').textContent = data.updateTimeReadable || '未知';
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                status.style.display = 'inline-block';
+                status.className = 'status success';
+                document.getElementById('statusText').textContent = '✓ 链接已加载';
+
+            } catch (error) {
+                console.error('加载失败:', error);
+                loading.style.display = 'none';
+                status.style.display = 'inline-block';
+                status.className = 'status error';
+                document.getElementById('statusText').textContent = '✗ 加载失败，请刷新重试';
+                showToast('获取链接失败: ' + error.message);
+            }
+        }
+
+        // 复制链接到剪贴板
+        function copyLink() {
+            if (!subscriptionLink) {
+                showToast('链接尚未加载');
+                return;
+            }
+
+            navigator.clipboard.writeText(subscriptionLink)
+                .then(() => {
+                    showToast('✓ 已复制到剪贴板');
+                })
+                .catch(() => {
+                    // 降级方案
+                    const textarea = document.createElement('textarea');
+                    textarea.value = subscriptionLink;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    showToast('✓ 已复制到剪贴板');
+                });
+        }
+
+        // 直接打开链接
+        function openLink() {
+            if (!subscriptionLink) {
+                showToast('链接尚未加载');
+                return;
+            }
+            window.location.href = subscriptionLink;
+        }
+
+        // 页面加载时自动获取链接
+        window.addEventListener('load', loadSubscription);
+    </script>
+</body>
+</html>
