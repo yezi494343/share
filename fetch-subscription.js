@@ -20,13 +20,33 @@ async function fetchSubscriptionLink() {
     page.setDefaultTimeout(30000);
 
     console.log('📱 访问登录页面...');
-    await page.goto('https://gw-2.smjc2.com/#/login', {
-      waitUntil: 'networkidle2'
-    });
+  await page.goto('https://gw-2.smjc2.com/#/login', {
+    waitUntil: 'networkidle2'
+  });
 
-    console.log('⏳ 等待页面加载完成...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
+  console.log('⏳ 等待页面加载完成...');
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
+  // 点击入口按钮
+  console.log('🔘 查找并点击入口按钮...');
+  try {
+    // 尝试查找并点击蓝色按钮
+    const button = await page.$('button, a.btn, .btn-primary, a[href*="gw-2.smjc2.com"]');
+    if (button) {
+      console.log('✅ 找到按钮，点击进入...');
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 }).catch(() => console.log('导航完成')),
+        button.click()
+      ]);
+    } else {
+      console.log('ℹ️ 未找到入口按钮，可能已经在正确页面');
+    }
+  } catch (error) {
+    console.log('⚠️ 点击按钮时出错，继续执行:', error.message);
+  }
+
+  console.log('⏳ 再等待页面加载...');
+  await new Promise(resolve => setTimeout(resolve, 3000));
     // 保存调试截图和HTML
     console.log('📸 保存登录页面截图...');
     await page.screenshot({ path: 'login-page.png', fullPage: true });
