@@ -115,61 +115,48 @@ async function fetchSubscriptionLink() {
     });
 
     // 等待页面加载
-    await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
-    console.log('🔍 查找订阅链接...');
+  // 向下滚动页面，让订阅链接区域加载出来
+  console.log('📜 向下滚动页面...');
+  await page.evaluate(() => {
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // 方法1：尝试查找包含订阅链接的元素
+  // 再次截图查看滚动后的页面
+  await page.screenshot({ path: 'profile-scrolled.png', fullPage: true });
+  console.log('📸 已保存滚动后的截图');
+
+  console.log('🔍 查找订阅链接...');
+
     let subscriptionLink = null;
 
-    // 尝试多种可能的方式获取链接
-    try {
-      // 方式A：直接从输入框或文本框获取
-      const linkElement = await page.$('input[readonly], textarea[readonly], .subscription-link, .sub-link');
-      if (linkElement) {
-        subscriptionLink = await page.evaluate(el => el.value || el.textContent, linkElement);
-      }
+  try {
+    // 直接查找包含http链接的readonly输入框
+    console.log('🔎 查找订阅链接输入框...');
+    const linkElement = await page.$('input[readonly][value*="http"], input[readonly]');
 
-      // 方式B：查找包含"订阅"关键字附近的链接
-      if (!subscriptionLink) {
-        subscriptionLink = await page.evaluate(() => {
-          // 查找所有可能包含订阅链接的元素
-          const elements = Array.from(document.querySelectorAll('*'));
-          for (const el of elements) {
-            const text = el.textContent || '';
-            if (text.includes('订阅') || text.includes('subscription')) {
-              // 检查附近是否有链接
-              const links = el.querySelectorAll('input, textarea, a');
-              for (const link of links) {
-                const value = link.value || link.href || link.textContent;
-                if (value && (value.startsWith('http') || value.includes('subscription'))) {
-                  return value;
-                }
-              }
-            }
-          }
-          return null;
-        });
-      }
+    if (linkElement) {
+      subscriptionLink = await page.evaluate(el => el.value, linkElement);
+      console.log('✅ 从输入框获取到链接');
+    }
 
-      // 方式C：模拟点击"复制订阅链接"按钮后从剪贴板获取
-      if (!subscriptionLink) {
-        const copyButton = await page.$('button:has-text("复制订阅"), button:has-text("复制链接"), .copy-btn');
-        if (copyButton) {
-          // 授予剪贴板权限
-          const context = browser.defaultBrowserContext();
-          await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
-
-          await copyButton.click();
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          // 从剪贴板读取
-          subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
+    // 如果没找到，尝试查找所有readonly输入框
+    if (!subscriptionLink) {
+      const allReadonlyInputs = await page.$$('input[readonly]');
+      for (const input of allReadonlyInputs) {
+        const value = await page.evaluate(el => el.value, input);
+        if (value && value.startsWith('http')) {
+          subscriptionLink = value;
+          console.log('✅ 从readonly输入框找到链接');
+          break;
         }
       }
-    } catch (error) {
-      console.error('❌ 获取链接时出错:', error.message);
     }
+  } catch (error) {
+    console.error('❌ 获取链接时出错:', error.message);
+  }
 
     if (!subscriptionLink) {
       // 保存页面截图用于调试
