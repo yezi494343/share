@@ -48,7 +48,12 @@ jobs:
             path: |
               login-page.png
               login-page.html
+              profile-viewport.png
+              profile-full.png
+              profile-scrolled.png
               debug-screenshot.png
+              login-still-on-page.png
+              after-login.png
             if-no-files-found: ignore
 
         - name: 提交更新
