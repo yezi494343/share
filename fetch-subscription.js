@@ -167,10 +167,23 @@ async function fetchSubscriptionLink() {
 
   // 向下滚动页面，让订阅链接区域加载出来
   console.log('📜 向下滚动页面...');
+
+  // 分多次滚动，让内容逐步加载
+  for (let i = 0; i < 5; i++) {
+    await page.evaluate((step) => {
+      window.scrollBy(0, 500); // 每次滚动500px
+    }, i);
+    await new Promise(resolve => setTimeout(resolve, 800)); // 每次滚动后等待
+    console.log(`滚动第 ${i + 1} 次...`);
+  }
+
+  // 最后滚动到底部
   await page.evaluate(() => {
     window.scrollTo(0, document.body.scrollHeight);
   });
-  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  console.log('✅ 已滚动到页面底部');
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
   // 再次截图查看滚动后的页面
   await page.screenshot({ path: 'profile-scrolled.png', fullPage: true });
