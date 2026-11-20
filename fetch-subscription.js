@@ -202,48 +202,48 @@ async function fetchSubscriptionLink() {
     // 查找"复制订阅链接"按钮
     console.log('🔎 查找复制按钮...');
 
-    const copyButton = await page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button, a, span, div'));
+  const copyButton = await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
+    const btn = buttons.find(el => {
+      const text = (el.textContent || el.innerText || '').trim();
+      return text === 'Copy Subscription Link' || el.className.includes('action-btn');
+    });
+    return btn ? true : false;
+  });
+
+  if (copyButton) {
+    console.log('✅ 找到复制按钮，授予剪贴板权限...');
+
+    // 授予剪贴板权限
+    const context = browser.defaultBrowserContext();
+    await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
+
+    // 点击按钮
+    console.log('👆 点击复制按钮...');
+    await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button, [role="button"]'));
       const btn = buttons.find(el => {
         const text = (el.textContent || el.innerText || '').trim();
-        return text === '复制订阅链接' || text.includes('复制订阅');
+        return text === 'Copy Subscription Link';
       });
-      return btn ? true : false;
+      if (btn) btn.click();
     });
 
-    if (copyButton) {
-      console.log('✅ 找到复制按钮，授予剪贴板权限...');
+    // 等待复制完成
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // 授予剪贴板权限
-      const context = browser.defaultBrowserContext();
-      await context.overridePermissions('https://gw-2.smjc2.com', ['clipboard-read', 'clipboard-write']);
+    // 从剪贴板读取
+    console.log('📋 从剪贴板读取...');
+    subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
 
-      // 点击按钮
-      console.log('👆 点击复制按钮...');
-      await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button, a, span, div'));
-        const btn = buttons.find(el => {
-          const text = (el.textContent || el.innerText || '').trim();
-          return text === '复制订阅链接' || text.includes('复制订阅');
-        });
-        if (btn) btn.click();
-      });
-
-      // 等待复制完成
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // 从剪贴板读取
-      console.log('📋 从剪贴板读取...');
-      subscriptionLink = await page.evaluate(() => navigator.clipboard.readText());
-
-      if (subscriptionLink) {
-        console.log('✅ 从剪贴板获取到链接');
-      } else {
-        console.log('⚠️ 剪贴板是空的');
-      }
+    if (subscriptionLink) {
+      console.log('✅ 成功从剪贴板获取到链接！');
     } else {
-      console.log('❌ 未找到复制按钮');
+      console.log('⚠️ 剪贴板是空的');
     }
+  } else {
+    console.log('❌ 未找到复制按钮');
+  }
   } catch (error) {
     console.error('❌ 获取链接时出错:', error.message);
   }
