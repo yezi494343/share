@@ -1,6 +1,7 @@
 {
   "name": "vpn-link-auto-share",
   "version": "1.0.0",
+  "type": "module",
   "description": "自动获取并分享VPN订阅链接",
   "main": "fetch-subscription.js",
   "scripts": {
