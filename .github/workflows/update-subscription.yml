@@ -1,6 +1,6 @@
 name: 自动更新订阅链接
 
-  on:
+on:
     schedule:
       - cron: '0 * * * *'
     workflow_dispatch:
@@ -8,7 +8,7 @@ name: 自动更新订阅链接
       branches:
         - main
 
-  jobs:
+jobs:
     update-link:
       runs-on: ubuntu-latest
 
