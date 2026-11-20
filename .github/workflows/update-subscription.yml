@@ -39,6 +39,18 @@ jobs:
           VPN_PASSWORD: ${{ secrets.VPN_PASSWORD }}
         run: node fetch-subscription.js
 
+      # 4.5. 上传调试文件（不包含敏感信息）
+      - name: 上传调试文件
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-files
+          path: |
+            login-page.png
+            login-page.html
+            debug-screenshot.png
+          if-no-files-found: ignore
+
       # 5. 提交更新到仓库
       - name: 提交更新
         run: |
