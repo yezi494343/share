@@ -186,8 +186,9 @@ async function fetchSubscriptionLink() {
   await new Promise(resolve => setTimeout(resolve, 3000));
 
   // 再次截图查看滚动后的页面
-  await page.screenshot({ path: 'profile-scrolled.png', fullPage: true });
-  console.log('📸 已保存滚动后的截图');
+  await page.screenshot({ path: 'profile-viewport.png', fullPage: false });
+  await page.screenshot({ path: 'profile-full.png', fullPage: true });
+  console.log('📸 已保存截图（视口和全页）');
 
   console.log('🔍 查找订阅链接...');
 
